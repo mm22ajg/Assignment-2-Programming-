@@ -1,4 +1,4 @@
-evaluate_design <- function(lambda, gamma, n1, n2) {
+evaluate_design <- function(lambda, gamma, n1, n2, theta) {
   
   # Estimate the type I error rate, type II error rate, and the expected 
   # sample size of a design defined by its decision rule parameters 

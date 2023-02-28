@@ -1,8 +1,8 @@
-prob_y1 <- function(y1, n1){
-  # Calculates the probability of observing y_1 responses in n_1 trials
+prob_y <- function(y, n){
+  # Calculates the probability of observing y responses in n trials
   # under a Beta-binomial model with Beta(a = 0.5, b = 0.5) prior.
   
-  choose(n1, y1) * beta(y1 + 0.5, n1 - y1 + 0.5) / beta(0.5, 0.5)
+  choose(n, y) * beta(y + 0.5, n - y + 0.5) / beta(0.5, 0.5)
 }
 
 evaluate_design <- function(lambda, gamma, n1, n2, theta) {
@@ -10,66 +10,32 @@ evaluate_design <- function(lambda, gamma, n1, n2, theta) {
   # Estimate the type I error rate, type II error rate, and the expected 
   # sample size of a design defined by its decision rule parameters 
   # (lambda, gamma) and sample size parameters (n1, n2).
+    
+  # Thresholds at each stage to determine progression, based on the 
+  # decision rule.
+  C1 <- 1 - lambda * (n1 / n2)^gamma
+  C2 <- 1 - lambda * (n2 / n2)^gamma
+    
+  # Vectors of possible stage 1 and stage 2 outcomes.
+  y1 <- 0:n1
+  y2 <- 0:n2
   
-  # Set the number of simulations.
-  M <- 10^4
+  # Vectors of corresponding progression decisions.
+  stops1 <- pbeta(0.5, y1 + 0.5, n1 - y1 + 0.5) < C1
+  stops2 <- pbeta(0.5, y2 + 0.5, n2 - y2 + 0.5) < C2
   
-  # Create an empty vector to store simulated Ns.
-  Ns <- rep(NA, M)
+  # For each outcome, calculate its probability.
+  y1_probs <- prob_y(y1, n1)
+  y2_probs <- prob_y(y2, n2)
   
-  # Create empty vectors to count the number of successes and failures at
-  # each stage.
-  Stage_1_s <- rep(0, M)
-  Stage_2_s <- rep(0, M)
-  Stage_1_f <- rep(0, M)
-  Stage_2_f <- rep(0, M)
+  # Estimate the expected sample size.
+  ESS <- sum(n1 * stops1 * y1_probs + n2 * !stops1 * y1_probs)
   
-  for (i in 1:M) {
-    
-    # Simulate the stage 1 and stage 2 data conditional on theta.
-    y1 <- rbinom(1, n1, theta)
-    y2 <- rbinom(1, n2, theta)
-    
-    # Get posterior Beta(a1, b1) and Beta(a2, b2) parameters.
-    a1 <- 0.5 + y1
-    b1 <- 0.5 + n1 - y1
-    a2 <- 0.5 + y2
-    b2 <- 0.5 + n2 - y2
-    
-    # Probability of futility at each stage.
-    fut1 <- pbeta(0.5, a1, b1)
-    fut2 <- pbeta(0.5, a2, b2)
-    
-    # Thresholds at each stage to determine progression, based on the 
-    # decision rule.
-    C1 <- 1 - lambda * (n1 / n2)^gamma
-    C2 <- 1 - lambda * (n2 / n2)^gamma
-    
-    # Count the number of progressions at each stage.
-    if (fut1 < C1) {
-      Stage_1_s[i] <- 1
-    } else {
-      Stage_1_f[i] <- 1
-    }
-    if (fut2 < C2) {
-      Stage_2_s[i] <- 1
-    } else {
-      Stage_2_f[i] <- 1
-    }
-    
-    # Estimate the type I and type II error rates.
-    type_I_error <- mean(Stage_1_s & Stage_2_s)
-    type_II_error <- mean(Stage_1_f | Stage_2_f)
-    
-    # Note the final total sample size for each simulation.
-    if (fut1 >= C1) {
-      Ns[i] <- n1
-    } else {
-      Ns[i] <- n2
-    }
-  }
+  # Estimate the type I and type II error rates.
+  type_I_error <- sum((!stops1 * y1_probs) & (!stops2 * y2_probs))
+  type_II_error <- sum((stops1 * y1_probs) | (stops2 * y2_probs))
   
   # Return the estimated expected sample size, type I error rate, and 
   # type II error rate.
-  return(c(mean(Ns), type_I_error, type_II_error))
+  return(c(ESS, type_I_error, type_II_error))
 }

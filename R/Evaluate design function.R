@@ -1,9 +1,13 @@
+source("./R/Unit tests.R")
+
 prob_y <- function(y, n){
   # Calculates the probability of observing y responses in n trials
   # under a Beta-binomial model with Beta(a = 0.5, b = 0.5) prior.
   
   choose(n, y) * beta(y + 0.5, n - y + 0.5) / beta(0.5, 0.5)
 }
+
+test_prob_y()
 
 evaluate_design <- function(lambda, gamma, n1, n2, theta) {
   

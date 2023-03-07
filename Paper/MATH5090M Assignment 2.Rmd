@@ -1,0 +1,12 @@
+---
+title: "Evaluating the BOP2 design"
+author: "Adam Gough (201612804)"
+date: '2023-03-07'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## Introduction
+
+Relapsed/refractory multiple myeloma (RRMM) is a type of bone marrow cancer

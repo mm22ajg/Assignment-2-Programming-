@@ -9,4 +9,32 @@ output:
 
 ## Introduction
 
-Relapsed/refractory multiple myeloma (RRMM) is a type of bone marrow cancer
+The RESERVE clinical trial studies the efficacy of a particular treatment on relapsed/refractory multiple myeloma (RRMM) patients, a type of bone marrow cancer. RESERVE is a type II clinical trial meaning we are investigating whether or not the patients respond to our treatment. This is important as patients with RRMM have previously been unresponsive to treatment. For safety, we want to be able to stop the trial early if it is clear the treatment is not working. To do this, we will implement the BOP2 (Bayesian optimal phase II) clinical trial design. This report aims to apply the BOP2 design in this scenario, and therefore evaluate its applicability.
+
+## The BOP2 design
+
+We will begin with a description of the Bayesian optimal phase II (BOP2) design. Consider the following trial structure:
+
+1.  Stage 1: Recruit $n_1$ patients and monitor their response to treatment.
+
+2.  Based on the data obtained from stage 1, determine whether to continue the trial.
+
+3.  Stage 2: Recruit further $\tilde{n}_2$ patients and monitor their response to treatment.
+
+4.  Based on the full set of data containing $n_2=n_1+\tilde{n}_2$ patients, determine whether to continue to a phase III trial where we would compare the treatment to the current standard.
+
+At each stage, we have a fixed number of patients, each with the same probability of responding to treatment, labelled $\theta$. Also, patient outcomes are independent of each other. Therefore, by the end of stage $i$, the number of patients who have responded to treatment $y_i$ is Binomially distributed, $$y_i|\theta\sim Bin(n_i,\theta)$$
+
+Taking a Bayesian approach, we can attain the posterior distribution for $\theta$ by using the conjugate prior distribution $\theta\sim Beta(a,b)$ and applying Bayes' theorem. We find,$$\theta|y_i\sim Beta(a+y_i,b+(n_i-y_i))$$
+
+Now consider the posterior probability of futility, i.e., the probability the patients are not responding to the treatment given the data. We can interpret this as the probability that $\theta<0.5$. To decide whether to stop the trial at each stage, we can assess whether this probability is above a threshold value. The BOP2 specifies that the threshold at each stage is given by,$$C(n_i)=1-\lambda\left(\frac{n_i}{n_2}\right)^\gamma$$
+
+Here, $\lambda$ and $\gamma$ are called the stopping rule parameters. We restrict ourselves to $0\le\lambda\le1$ and $\gamma>0$.
+
+Contemplate a hypothesis test for $\theta$ where $\theta_0$ and $\theta_1$ denote the null and alternative hypotheses, respectively. Then we can define the type I error rate as the probability of declaring a successful result at the end of stage 2 under the null hypothesis, and the type II error rate as the probability of declaring an unsuccessful result under the alternative hypothesis.
+
+We can now optimise the trial design by finding the stopping rule parameters which minimise the type II error rate, subject to the type I error rate being below a specified probability.
+
+## Application
+
+\$\$\$\$

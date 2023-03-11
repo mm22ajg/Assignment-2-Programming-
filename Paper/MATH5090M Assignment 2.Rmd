@@ -162,25 +162,38 @@ The minimum expected sample size found by the algorithm is 27.657. This is achie
 
 In the above implementation of the BOP2 clinical trial design we have used $\theta\sim Beta(0.5, 0.5)$ as a prior distribution for $\theta$. Below is the corresponding probability density function.
 
+<center>
+
 ```{r echo=FALSE}
 x <- seq(0, 1, length = 1000)
 y <- dbeta(x, shape1 = 0.5, shape2 = 0.5)
-plot(x, y, type = "l", xlab = expression(theta), ylab = "PDF", main = 'Beta(0.5,0.5)')
+plot(x, y, type = "l", xlab = expression(theta), ylab = "PDF", main = 'Beta(0.5,0.5) distribution', lwd = 2)
 ```
+
+</center>
 
 We can see that the distribution is symmetric about 0.5, and indeed we have $Pr(\theta<0.5)=Pr(\theta\ge0.5)=0.5$, Additionally, $E[\theta]=0.5$. This gives us no information on whether we think patients will respond to treatment prior to our clinical trial. We will now consider two cases. In Case 1, suppose we are more certain that the patients will not respond to treatment. In Case 2, suppose we are more certain that the patients will respond to treatment. We can express these prior beliefs in Case 1 and Case 2 as the following distributions: $\theta_1\sim Beta(a_1=2,b_1=5)$ and $\theta_2\sim Beta(a_2=5,b_2=2)$. Below are the corresponding probability density functions.
 
+<center>
+
 ```{r echo=FALSE}
-par(mfrow=c(1,2))
-x <- seq(0, 1, length = 1000)
-pdf_1 <- dbeta(x, shape1 = 2, shape2 = 5)
-pdf_2 <- dbeta(x, shape1 = 5, shape2 = 2)
-plot(x, pdf_1, type = "l", xlab = expression(theta), ylab = "PDF", main = "Case 1 - Beta(2,5)")
-plot(x, pdf_2, type = "l", xlab = expression(theta), ylab = "PDF", main = "Case 2 - Beta(5,2)")
+x <- seq(0, 1, length.out = 1000)
+plot(x, dbeta(x, 2, 5), type = "l", col = "blue", lwd = 2, 
+     xlab = expression(theta), ylab = "PDF", 
+     main = "Beta(2,5) and Beta(5,2) distributions")
+lines(x, dbeta(x, 5, 2), type = "l", col = "red", lwd = 2)
+legend("topright", lwd = 2, col = c("blue", "red"),
+       legend = c("Case 1 - Beta(2,5)", "Case 2 - Beta(5,2)"))
 ```
+
+</center>
 
 Now we have that $E[\theta_1]=\frac{2}{7}\approx0.286$ and $E[\theta_2]=\frac{5}{7}\approx0.714$. We can now optimise again, but this time using our new prior distributions. Starting with Case 1,
 
-```{r}
+```{r echo=TRUE}
+BOP2optim(a = 2, b = 5)
+```
 
+```{r}
+BOP2optim(a = 5, b = 2)
 ```

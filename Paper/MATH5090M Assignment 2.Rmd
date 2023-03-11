@@ -121,38 +121,66 @@ error_rates <- function(lambda, gamma, n1, n2, a, b) {
 The code above outputs `TRUE` here as we have utilised a unit test to ensure that the probabilities from the function `prob_y` sum to 1. Notice that these functions also depend on the prior distribution parameters $a$ and $b$. This will be useful when we change how informative the prior distribution is. Now we can use a grid search to find the parameters $\lambda$, $\gamma$, $n_1$, and $n_2$ which minimise the expected sample size subject to our constraints.
 
 ```{r echo=TRUE}
-# Create a grid of possible parameter values.
-grid <- expand.grid(lambda = seq(0,1,0.05), gamma = seq(0.05,2,0.05), n1 = seq(4, 20, 4), n2 = seq(5, 80, 5))
-grid <- grid[grid$n1<=grid$n2,]
-
-# Initialise vectors.
-res <- c(max(grid[,4]),0,0)
-
-# Search over the grid for the minimum expected sample size and record the time elapsed.
-ptm <- proc.time()
-for(i in 1:nrow(grid)){
-  exp_s_s <- expected_sample_size(grid[i,1],grid[i,2],grid[i,3],grid[i,4], a = 0.5, b = 0.5)
-  err_rts <- error_rates(grid[i,1],to_eval[i,2],grid[i,3],grid[i,4], a = 0.5, b = 0.5)
-  if(exp_s_s < res[1] & err_rts[1] <= 0.05 & err_rts[2] <= 0.2){
-    res <- c(exp_s_s,err_rts[1],err_rts[2])
-    val <- grid[i,]
+BOP2optim <- function(a, b){
+  
+  # Minimise the expected sample size of a BOP2 design subject to the
+  # type I error rate being at most 0.05 and the type II error rate being at most
+  # 0.2 using a grid search.
+  
+  # Create a grid of possible parameter values.
+  grid <- expand.grid(lambda = seq(0,1,0.05), gamma = seq(0.05,2,0.05), n1 = seq(4, 20, 4), n2 = seq(5, 80, 5))
+  grid <- grid[grid$n1<=grid$n2,]
+  
+  # Initialise vectors.
+  res <- c(max(grid[,4]),0,0)
+  
+  # Search over the grid for the minimum expected sample size and record the 
+  # corresponding parameters.
+  for(i in 1:nrow(grid)){
+    exp_s_s <- expected_sample_size(grid[i,1],grid[i,2],grid[i,3],grid[i,4], a = a, b = b)
+    err_rts <- error_rates(grid[i,1],grid[i,2],grid[i,3],grid[i,4], a = a, b = b)
+    if(exp_s_s < res[1] & err_rts[1] <= 0.05 & err_rts[2] <= 0.2){
+      res <- c(exp_s_s,err_rts[1],err_rts[2])
+      val <- grid[i,]
+    }
   }
+  
+  #Return the minimised expected sample size, error rates and corresponding parameters.
+  print(val)
+  print(res)
 }
-proc.time() - ptm
 
-# Output the parameters.
-print(val)
-# Output the expected sample size and error rates corresponding to these parameters.
-print(res)
+# Optimise the BOP2 design when a = 0.5 and b = 0.5, and record the time elapsed.
+ptm <- proc.time()
+BOP2optim(a = 0.5, b = 0.5)
+proc.time() - ptm
 ```
 
 The minimum expected sample size found by the algorithm is 27.657. This is achieved when $\lambda=0.95$, $\gamma=0.9$, $n_1=8$, and $n_2=40$. The algorithm took over one minute to run which is very poor considering the precision of our parameter estimates is $\pm0.025$, $\pm0.025$, $\pm2$, and $\pm2.5$, respectively.
 
 ## Evaluation
 
-In the above implementation of the BOP2 clinical trial design we have used $\theta\sim Beta(0.5, 0.5)$ as a prior distribution for $\theta$. Below is the probability density function for this prior distribution
+In the above implementation of the BOP2 clinical trial design we have used $\theta\sim Beta(0.5, 0.5)$ as a prior distribution for $\theta$. Below is the corresponding probability density function.
+
+```{r echo=FALSE}
+x <- seq(0, 1, length = 1000)
+y <- dbeta(x, shape1 = 0.5, shape2 = 0.5)
+plot(x, y, type = "l", xlab = expression(theta), ylab = "PDF", main = 'Beta(0.5,0.5)')
+```
+
+We can see that the distribution is symmetric about 0.5, and indeed we have $Pr(\theta<0.5)=Pr(\theta\ge0.5)=0.5$, Additionally, $E[\theta]=0.5$. This gives us no information on whether we think patients will respond to treatment prior to our clinical trial. We will now consider two cases. In Case 1, suppose we are more certain that the patients will not respond to treatment. In Case 2, suppose we are more certain that the patients will respond to treatment. We can express these prior beliefs in Case 1 and Case 2 as the following distributions: $\theta_1\sim Beta(a_1=2,b_1=5)$ and $\theta_2\sim Beta(a_2=5,b_2=2)$. Below are the corresponding probability density functions.
+
+```{r echo=FALSE}
+par(mfrow=c(1,2))
+x <- seq(0, 1, length = 1000)
+pdf_1 <- dbeta(x, shape1 = 2, shape2 = 5)
+pdf_2 <- dbeta(x, shape1 = 5, shape2 = 2)
+plot(x, pdf_1, type = "l", xlab = expression(theta), ylab = "PDF", main = "Case 1 - Beta(2,5)")
+plot(x, pdf_2, type = "l", xlab = expression(theta), ylab = "PDF", main = "Case 2 - Beta(5,2)")
+```
+
+Now we have that $E[\theta_1]=\frac{2}{7}\approx0.286$ and $E[\theta_2]=\frac{5}{7}\approx0.714$. We can now optimise again, but this time using our new prior distributions. Starting with Case 1,
 
 ```{r}
-x = seq(0,1,0.01)
-plot(x, pbeta(x, 0.5, 0.5), type='l')
+
 ```

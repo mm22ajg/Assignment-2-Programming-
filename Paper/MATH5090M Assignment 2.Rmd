@@ -9,7 +9,7 @@ output:
 
 ## Introduction
 
-The RESERVE clinical trial studies the efficacy of a particular treatment on patients with relapsed/refractory multiple myeloma (RRMM), a type of bone marrow cancer. RESERVE is a type II clinical trial meaning we are investigating whether or not the patients respond to our treatment. This is important as patients with RRMM have previously been unresponsive to treatment. For safety, we want to be able to stop the trial early if it is clear the treatment is not working. To do this, we will implement the BOP2 (Bayesian optimal phase II) clinical trial design. This report aims to apply the BOP2 design in this scenario, and then evaluate how the result changes based on the prior distribution.
+The RESERVE clinical trial studies the efficacy of a particular treatment on patients with relapsed/refractory multiple myeloma (RRMM), a type of bone marrow cancer. RESERVE is a type II clinical trial meaning we are investigating whether or not the patients respond to our treatment. This is important as patients with RRMM have previously been unresponsive to treatment. For safety, we want to be able to stop the trial early if it is clear the treatment is not working. To do this, we will implement the BOP2 (Bayesian optimal phase II) clinical trial design. This report aims to apply the BOP2 design in this scenario, and then evaluate how the design changes when we use a more or less informative prior distribution.
 
 ## The BOP2 design
 
@@ -33,30 +33,20 @@ Here, $\lambda$ and $\gamma$ are called the stopping rule parameters. We restric
 
 Contemplate a hypothesis test for $\theta$ where $\theta_0$ and $\theta_1$ denote the null and alternative hypotheses, respectively. Then we can define the type I error rate as the probability of continuing the trial at the end of stage 2 under the null hypothesis, and the type II error rate as the probability of stopping the trial at either stage under the alternative hypothesis.
 
-We can now optimise the trial design by finding the stopping rule and sample size parameters which minimise the expected sample size, subject to the type I and II error rates being below specified probabilities.
+We can now optimise the trial design by finding the stopping rule and sample size parameters which minimise the expected sample size under the null hypothesis, subject to constraints on the type I error rate under the null hypothesis and the type II error rate under the alternative hypothesis.
 
 ## Application
 
-Now we can implement the BOP2 clinical trial design in R. Here $\theta_0=0.5$ and $\theta_1=0.7$. We want to minimise the expected sample size subject to the type I error rate being at most $0.05$ and the type II error rate being at most $0.2$. For the prior distribution we will begin by using $a=0.5$ and $b=0.5$. We need to program two functions which are capable of calculating the expected sample size and the error rates.
+Now we can implement the BOP2 clinical trial design in R. Here the null hypothesis is given by $\theta_0=0.5$ and the alternative hypothesis is given by $\theta_1=0.7$. We want to minimise the expected sample size subject to the type I error rate being at most $0.05$ and the type II error rate being at most $0.2$. For the prior distribution we will begin by using $a=0.5$ and $b=0.5$. First, we need to know how to calculate the expected sample sizes and the error rates. Since the sample size $N$ can only take two values, $n_1$ and $n_2$, the expected sample size is given by $$E[N]=n_1Pr(N=n_1)+n_2Pr(N=n_2)$$Since the number of responses has a binomail distribution, we can use the law of total probability to sum over all possible number of reponses and write $Pr(N=n_1)$ as $$Pr(N=n_1)=\sum_{y_1=0}^{n_1}I\left[\int_{0}^{0.5}p(\theta\mid y_1)\, d\theta>C_1\right]p(y_1)$$Where $I$ is the indicator function. To find the distribution of $p(y_1)$, we can use the law of total probability again (although this time the continuous case) to obtain$$p(y_1)=\int_{0}^{1}p(y_1\mid \theta)p(\theta)\,d\theta=\binom{n}{k}\frac{B(y_1+a,n_1-y_1+b)}{B(a,b)}$$Where $p(y_1\mid\theta)$ is the likelihood function and $p(\theta)$ is the prior density. Note that $Pr(N=n_2)$ is equivalent to not stopping at stage 1, therefore
+$$Pr(N=n_2)=\sum_{y_1=0}^{n_1}I\left[\int_{0}^{0.5}p(\theta\mid y_1)\, d\theta<C_1\right]p(y_1)$$We are now ready to program this in RStudio.
 
-```{r include=FALSE}
-test_prob_y <- function(a, b) {
-  # Check that the probabilities sum to 1.
-  n <- 30
-  s <- sum(prob_y(0:n, n, a, b))
-  return(all.equal(s, 1))
-}
-```
-
-```{r echo=TRUE}
+```{r}
 prob_y <- function(y, n, a, b) {
   # Calculate the probability of observing y responses in n trials
   # under a Beta-binomial model with Beta(a, b) prior.
   
   choose(n, y) * beta(y + a, n - y + b) / beta(a, b)
 }
-
-test_prob_y(a = 0.5, b = 0.5)
 
 expected_sample_size <- function(lambda, gamma, n1, n2, a, b) {
   
@@ -78,7 +68,26 @@ expected_sample_size <- function(lambda, gamma, n1, n2, a, b) {
   
   return(sum(n1 * stops * y_1_probs + n2 * (!stops) * y_1_probs))
 }
+```
 
+We can then use a unit test to check that the function `prob_y` and ensure that all the probabilities sum to 1.
+
+```{r}
+test_prob_y <- function(a, b) {
+  # Check that the probabilities sum to 1.
+  n <- 30
+  s <- sum(prob_y(0:n, n, a, b))
+  return(all.equal(s, 1))
+}
+
+test_prob_y(a = 0.5, b = 0.5)
+```
+
+The test outputs `TRUE` therefore the function is working correctly.
+
+Now we need to calculate the error rates. We have previously stated that the type I error rate is the probability of continuing the trial at the end of stage 2 under the null hypothesis. Therefore it is given by$$Pr(Type\,I\,error)=\sum_{y_1=0}^{n_1}\sum_{y_2=0}^{n_2-n_1}I[Pr(\theta<0.5\mid y_1)<C_1]I[Pr(\theta<0.5\mid y_2)<C_2]p(y_1\mid\theta)p(y_2\mid\theta)$$Similarly the type II error rate is the probability of stopping the trial at either stage under the alternative hypothesis. Therefore$$Pr(Type\,II\,error)=\sum_{y_1=0}^{n_1}\sum_{y_2=0}^{n_2-n_1}(I[Pr(\theta<0.5\mid y_1)>C_1]+I[Pr(\theta<0.5\mid y_2)>C_2])p(y_1\mid\theta)p(y_2\mid\theta)$$Now we can use RStudio to evaluate these probabilities.
+
+```{r echo=TRUE}
 prob_y1_and_y2 <- function(y_1, y_2, n1, n2, theta) {
   
   # Calculate the probability of observing y_1 and y_2 given theta.
@@ -87,7 +96,7 @@ prob_y1_and_y2 <- function(y_1, y_2, n1, n2, theta) {
 
 error_rates <- function(lambda, gamma, n1, n2, a, b) {
   
-  # Calculate the type I and type II error rates of a BOP2 design defined 
+  # Calculate the type I and II error rates of a BOP2 design defined 
   # by its decision rule parameters (lambda, gamma), sample size 
   # parameters (n1, n2), and prior distribution parameters (a, b).
   
@@ -118,14 +127,13 @@ error_rates <- function(lambda, gamma, n1, n2, a, b) {
 }
 ```
 
-The code above outputs `TRUE` here as we have utilised a unit test to ensure that the probabilities from the function `prob_y` sum to 1. Notice that these functions also depend on the prior distribution parameters $a$ and $b$. This will be useful when we change how informative the prior distribution is. Now we can use a grid search to find the parameters $\lambda$, $\gamma$, $n_1$, and $n_2$ which minimise the expected sample size subject to our constraints.
+Notice that these functions also depend on the prior distribution parameters $a$ and $b$. This will be useful when we change how informative the prior distribution is. Now we can create a function which will use a grid search to find the optimal parameters $\lambda$, $\gamma$, $n_1$, and $n_2$.
 
 ```{r echo=TRUE}
 BOP2optim <- function(a, b){
   
   # Minimise the expected sample size of a BOP2 design subject to the
-  # type I error rate being at most 0.05 and the type II error rate being at most
-  # 0.2 using a grid search.
+  # type I error rate being at most 0.05 and the type II error rate       # being at most 0.2 using a grid search.
   
   # Create a grid of possible parameter values.
   grid <- expand.grid(lambda = seq(0,1,0.05), gamma = seq(0.05,2,0.05), n1 = seq(4, 20, 4), n2 = seq(5, 80, 5))
@@ -134,8 +142,7 @@ BOP2optim <- function(a, b){
   # Initialise vectors.
   res <- c(max(grid[,4]),0,0)
   
-  # Search over the grid for the minimum expected sample size and record the 
-  # corresponding parameters.
+  # Search over the grid for the minimum expected sample size and record   # the corresponding parameters.
   for(i in 1:nrow(grid)){
     exp_s_s <- expected_sample_size(grid[i,1],grid[i,2],grid[i,3],grid[i,4], a = a, b = b)
     err_rts <- error_rates(grid[i,1],grid[i,2],grid[i,3],grid[i,4], a = a, b = b)
@@ -145,18 +152,18 @@ BOP2optim <- function(a, b){
     }
   }
   
-  #Return the minimised expected sample size, error rates and corresponding parameters.
+  # Return the minimised expected sample size, error rates and            # corresponding parameters.
   print(val)
   print(res)
 }
 
-# Optimise the BOP2 design when a = 0.5 and b = 0.5, and record the time elapsed.
+# Optimise the BOP2 design when a = 0.5 and b = 0.5, and record the time # elapsed.
 ptm <- proc.time()
 BOP2optim(a = 0.5, b = 0.5)
 proc.time() - ptm
 ```
 
-The minimum expected sample size found by the algorithm is 27.657. This is achieved when $\lambda=0.95$, $\gamma=0.9$, $n_1=8$, and $n_2=40$. The algorithm took over one minute to run which is very poor considering the precision of our parameter estimates is $\pm0.025$, $\pm0.025$, $\pm2$, and $\pm2.5$, respectively.
+The minimum expected sample size found by the algorithm is 27.657. This is achieved when $\lambda=0.95$, $\gamma=0.9$, $n_1=8$, and $n_2=40$. These parameters result in a type I error rate of 0.0399 and a type II error rate of 0.196, which both satisfy the constraints. The algorithm took over one minute to run which is very poor considering the precision of our parameter estimates is $\pm0.025$, $\pm0.025$, $\pm2$, and $\pm2.5$, respectively. We will discuss the efficiency of this method later.
 
 ## Evaluation
 
@@ -172,7 +179,7 @@ plot(x, y, type = "l", xlab = expression(theta), ylab = "PDF", main = 'Beta(0.5,
 
 </center>
 
-We can see that the distribution is symmetric about 0.5, and indeed we have $Pr(\theta<0.5)=Pr(\theta\ge0.5)=0.5$, Additionally, $E[\theta]=0.5$. This gives us no information on whether we think patients will respond to treatment prior to our clinical trial. We will now consider two cases. In Case 1, suppose we are more certain that the patients will not respond to treatment. In Case 2, suppose we are more certain that the patients will respond to treatment. We can express these prior beliefs in Case 1 and Case 2 as the following distributions: $\theta_1\sim Beta(a_1=2,b_1=5)$ and $\theta_2\sim Beta(a_2=5,b_2=2)$. Below are the corresponding probability density functions.
+We can see that the distribution is symmetric about 0.5, and indeed we have $Pr(\theta<0.5)=Pr(\theta\ge0.5)=0.5$, Additionally, $E[\theta]=0.5$. This gives us no information on whether we think patients will respond to treatment prior to our clinical trial. We will now consider two more informative cases. In Case 1, suppose we are more certain that the patients will not respond to treatment. In Case 2, suppose we are more certain that the patients will respond to treatment. We can express these prior beliefs in Case 1 and Case 2 as the following distributions: $\theta_1\sim Beta(a_1=2,b_1=5)$ and $\theta_2\sim Beta(a_2=5,b_2=2)$. Below are the corresponding probability density functions.
 
 <center>
 

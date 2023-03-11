@@ -411,13 +411,122 @@ hypotheses, respectively. Then we can define the type I error rate as
 the probability of continuing the trial at the end of stage 2 under the
 null hypothesis, and the type II error rate as the probability of
 stopping the trial at either stage under the alternative hypothesis.</p>
-<p>We can now optimise the trial design by finding the stopping rule
-parameters which minimise the type II error rate, subject to the type I
-error rate being below a specified probability.</p>
+<p>We can now optimise the trial design by finding the stopping rule and
+sample size parameters which minimise the expected sample size, subject
+to the type I and II error rates being below specified
+probabilities.</p>
 </div>
 <div id="application" class="section level2">
 <h2>Application</h2>
-<p>$$$$</p>
+<p>Now we can implement the BOP2 clinical trial design in R. Here we
+want to minimise the expected sample size subject to the type I error
+rate being at most <span class="math inline">\(0.05\)</span> and the
+type II error rate being at most <span class="math inline">\(0.2\)</span>. For the prior distribution we will
+use <span class="math inline">\(a=0.5\)</span> and <span class="math inline">\(b=0.5\)</span> here. We need to program two
+functions which are capable of calculating the expected sample size and
+the error rates.</p>
+<pre class="r"><code>prob_y &lt;- function(y, n, a, b) {
+  # Calculate the probability of observing y responses in n trials
+  # under a Beta-binomial model with Beta(a, b) prior.
+  
+  choose(n, y) * beta(y + a, n - y + b) / beta(a, b)
+}
+
+test_prob_y(a = 0.5, b = 0.5)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code>expected_sample_size &lt;- function(lambda, gamma, n1, n2, a, b) {
+  
+  # Calculate the expected sample size of a BOP2 design defined by its 
+  # decision rule parameters (lambda, gamma), sample size parameters 
+  # (n1, n2), and prior distribution parameters (a, b)
+  
+  # Threshold to determine progression.
+  C1 &lt;- 1 - lambda * (n1 / n2)^gamma
+  
+  # Vector of possible stage 1 outcomes.
+  y_1s &lt;- 0:n1
+  
+  # Vector of corresponding progression decisions.
+  stops &lt;- pbeta(0.5, y_1s + a, n1 - y_1s + b) &gt; C1
+  
+  # Calculate the probability of each outcome.
+  y_1_probs &lt;- prob_y(y_1s, n1, a, b)
+  
+  return(sum(n1 * stops * y_1_probs + n2 * (!stops) * y_1_probs))
+}
+
+prob_y1_and_y2 &lt;- function(y_1, y_2, n1, n2, theta) {
+  
+  # Calculate the probability of observing y_1 and y_2 given theta.
+  dbinom(y_1, n1, theta)*dbinom(y_2, n2 - n1, theta)
+}
+
+error_rates &lt;- function(lambda, gamma, n1, n2, a, b) {
+  
+  # Calculate the type I and type II error rates of a BOP2 design defined 
+  # by its decision rule parameters (lambda, gamma), sample size 
+  # parameters (n1, n2), and prior distribution parameters (a, b).
+  
+  # Thresholds to determine progression.
+  C1 &lt;- 1 - lambda * (n1 / n2)^gamma
+  C2 &lt;- 1 - lambda * (n2 / n2)^gamma
+  
+  # Matrix of possible successes in stage 1 and 2.
+  ys &lt;- expand.grid(y_1 = 0:n1, y_2 = 0:(n2 - n1))
+  
+  # Vectors of corresponding progression decisions at stage 1 and 2.
+  go_1 &lt;- pbeta(0.5, ys$y_1 + a, n1 - ys$y_1 + b) &lt; C1
+  go_2 &lt;- pbeta(0.5, ys$y_1 + ys$y_2 + a, n2 - ys$y_1 - ys$y_2 + b) &lt; C2
+  
+  # Vectors of overall progression decisions.
+  go_tI &lt;- go_1 &amp; go_2
+  go_tII &lt;- !go_1 | !go_2
+  
+  # Calculate the probability of each outcome.
+  probs_tI &lt;- prob_y1_and_y2(ys$y_1, ys$y_2, n1, n2, 0.5)
+  probs_tII &lt;- prob_y1_and_y2(ys$y_1, ys$y_2, n1, n2, 0.7)
+  
+  # Calculate the type I and type II error rates.
+  type_I &lt;- sum(go_tI*probs_tI)
+  type_II &lt;- sum(go_tII*probs_tII)
+  
+  return(c(type_I,type_II))
+}</code></pre>
+<p>The code above outputs <code>TRUE</code> here as we have utilised a
+unit test to ensure that the probabilities from the function
+<code>prob_y</code> sum to 1. Notice that these functions also depend on
+the prior distribution parameters <span class="math inline">\(a\)</span>
+and <span class="math inline">\(b\)</span>. This will be useful when we
+change how informative the prior distribution is. Now we can use a grid
+search to find the parameters <span class="math inline">\(\lambda\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(n_1\)</span>, and <span class="math inline">\(n_2\)</span> which minimise the expected sample
+size subject to our constraints.</p>
+<pre class="r"><code># Create a grid of possible parameter values.
+grid &lt;- expand.grid(lambda = seq(0,1,0.05), gamma = seq(0.05,2,0.05), n1 = seq(4, 20, 4), n2 = seq(5, 80, 5))
+grid &lt;- grid[grid$n1&lt;=grid$n2,]
+
+# Initialise vectors.
+res &lt;- c(max(grid[,4]),0,0)
+
+# Search over the grid for the minimum expected sample size 
+# and record the time elapsed.
+ptm &lt;- proc.time()
+for(i in 1:nrow(grid)){
+  exp_s_s &lt;- expected_sample_size(grid[i,1],grid[i,2],grid[i,3],grid[i,4], a = 0.5, b = 0.5)
+  err_rts &lt;- error_rates(grid[i,1],grid[i,2],grid[i,3],grid[i,4], a = 0.5, b = 0.5)
+  if(exp_s_s &lt; res[1] &amp; err_rts[1] &lt;= 0.05 &amp; err_rts[2] &lt;= 0.2){
+    res &lt;- c(exp_s_s,err_rts[1],err_rts[2])
+    val &lt;- grid[i,]
+  }
+}
+proc.time() - ptm</code></pre>
+<pre><code>##    user  system elapsed 
+##   50.50    0.28   66.57</code></pre>
+<pre class="r"><code># Output the parameters and the corresponding expected sample size and error rates.
+print(res)</code></pre>
+<pre><code>## [1] 27.65722656  0.03992851  0.19625897</code></pre>
+<pre class="r"><code>print(val)</code></pre>
+<pre><code>##       lambda gamma n1 n2
+## 30617   0.95   0.9  8 40</code></pre>
 </div>
 
 

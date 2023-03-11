@@ -70,24 +70,24 @@ error_rates <- function(lambda, gamma, n1, n2, a, b) {
 
 # Create a grid of possible parameter values.
 grid <- expand.grid(lambda = seq(0,1,0.05), gamma = seq(0.05,2,0.05), n1 = seq(4, 20, 4), n2 = seq(5, 80, 5))
-grid <- to_eval[to_eval$n1<=to_eval$n2,]
+grid <- grid[grid$n1<=grid$n2,]
 
 # Initialise vectors.
 res <- c(max(grid[,4]),0,0)
 
-# Search over the grid for the minimum expected sample size 
-# and record the time elapsed.
+# Search over the grid for the minimum expected sample size and record the time elapsed.
 ptm <- proc.time()
-for(i in 1:nrow(to_eval)){
-  exp_s_s <- expected_sample_size(to_eval[i,1],to_eval[i,2],to_eval[i,3],to_eval[i,4], a = 0.5, b = 0.5)
-  err_rts <- error_rates(to_eval[i,1],to_eval[i,2],to_eval[i,3],to_eval[i,4], a = 0.5, b = 0.5)
+for(i in 1:nrow(grid)){
+  exp_s_s <- expected_sample_size(grid[i,1],grid[i,2],grid[i,3],grid[i,4], a = 0.5, b = 0.5)
+  err_rts <- error_rates(grid[i,1],to_eval[i,2],grid[i,3],grid[i,4], a = 0.5, b = 0.5)
   if(exp_s_s < res[1] & err_rts[1] <= 0.05 & err_rts[2] <= 0.2){
     res <- c(exp_s_s,err_rts[1],err_rts[2])
-    val <- to_eval[i,]
+    val <- grid[i,]
   }
 }
 proc.time() - ptm
 
-# Output the parameters and the corresponding expected sample size and error rates.
-print(res)
+# Output the parameters.
 print(val)
+# Output the expected sample size and error rates corresponding to these parameters.
+print(res)

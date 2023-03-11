@@ -69,3 +69,22 @@ error_rates <- function(lambda, gamma, n1, n2, a, b) {
   
   return(c(type_I,type_II))
 }
+
+to_eval <- expand.grid(lambda = seq(0,1,0.05), gamma = seq(0.05,2,0.05), n1 = seq(4, 20, 4), n2 = seq(5, 80, 5))
+to_eval <- to_eval[to_eval$n1<=to_eval$n2,]
+
+res <- c(50,0,0)
+
+ptm <- proc.time()
+for(i in 1:nrow(to_eval)){
+  exp_s_s <- expected_sample_size(to_eval[i,1],to_eval[i,2],to_eval[i,3],to_eval[i,4], a = 0.5, b = 0.5)
+  err_rts <- error_rates(to_eval[i,1],to_eval[i,2],to_eval[i,3],to_eval[i,4], a = 0.5, b = 0.5)
+  if(exp_s_s < res[1] & err_rts[1] <= 0.05 & err_rts[2] <= 0.2){
+    res <- c(exp_s_s,err_rts[1],err_rts[2])
+    val <- to_eval[i,]
+  }
+}
+proc.time() - ptm
+
+print(res)
+print(val)

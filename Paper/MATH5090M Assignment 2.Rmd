@@ -70,7 +70,7 @@ expected_sample_size <- function(lambda, gamma, n1, n2, a, b) {
 }
 ```
 
-We can then use a unit test to check that the function `prob_y` and ensure that all the probabilities sum to 1.
+We can then use a unit test to check the function `prob_y` and ensure that all the probabilities sum to 1.
 
 ```{r}
 test_prob_y <- function(a, b) {
@@ -85,7 +85,7 @@ test_prob_y(a = 0.5, b = 0.5)
 
 The test outputs `TRUE` therefore the function is working correctly.
 
-Now we need to calculate the error rates. We have previously stated that the type I error rate is the probability of continuing the trial at the end of stage 2 under the null hypothesis. Therefore it is given by$$Pr(Type\,I\,error)=\sum_{y_1=0}^{n_1}\sum_{y_2=0}^{n_2-n_1}I[Pr(\theta<0.5\mid y_1)<C_1]I[Pr(\theta<0.5\mid y_2)<C_2]p(y_1\mid\theta)p(y_2\mid\theta)$$Similarly the type II error rate is the probability of stopping the trial at either stage under the alternative hypothesis. Therefore$$Pr(Type\,II\,error)=\sum_{y_1=0}^{n_1}\sum_{y_2=0}^{n_2-n_1}(I[Pr(\theta<0.5\mid y_1)>C_1]+I[Pr(\theta<0.5\mid y_2)>C_2])p(y_1\mid\theta)p(y_2\mid\theta)$$Now we can use RStudio to evaluate these probabilities.
+Now we need to calculate the error rates. We have previously stated that the type I error rate is the probability of continuing the trial at the end of stage 2 under the null hypothesis. Therefore it is given by$$Pr(Type\,I\,error)=\sum_{y_1=0}^{n_1}\sum_{y_2=0}^{n_2-n_1}I[Pr(\theta<0.5\mid y_1)<C_1\cap Pr(\theta<0.5\mid y_2)<C_2]p(y_1\mid\theta=0.5)p(y_2\mid\theta=0.5)$$Similarly the type II error rate is the probability of stopping the trial at either stage under the alternative hypothesis. Therefore$$Pr(Type\,II\,error)=\sum_{y_1=0}^{n_1}\sum_{y_2=0}^{n_2-n_1}I[Pr(\theta<0.5\mid y_1)>C_1\cup Pr(\theta<0.5\mid y_2)>C_2]p(y_1\mid\theta=0.7)p(y_2\mid\theta=0.7)$$Now we can use RStudio to evaluate these probabilities.
 
 ```{r echo=TRUE}
 prob_y1_and_y2 <- function(y_1, y_2, n1, n2, theta) {
@@ -179,7 +179,7 @@ plot(x, y, type = "l", xlab = expression(theta), ylab = "PDF", main = 'Beta(0.5,
 
 </center>
 
-We can see that the distribution is symmetric about 0.5, and indeed we have $Pr(\theta<0.5)=Pr(\theta\ge0.5)=0.5$, Additionally, $E[\theta]=0.5$. This gives us no information on whether we think patients will respond to treatment prior to our clinical trial. We will now consider two more informative cases. In Case 1, suppose we are more certain that the patients will not respond to treatment. In Case 2, suppose we are more certain that the patients will respond to treatment. We can express these prior beliefs in Case 1 and Case 2 as the following distributions: $\theta_1\sim Beta(a_1=2,b_1=5)$ and $\theta_2\sim Beta(a_2=5,b_2=2)$. Below are the corresponding probability density functions.
+We can see that the distribution is symmetric about 0.5, and indeed we have $Pr(\theta<0.5)=Pr(\theta\ge0.5)=0.5$. Additionally, $E[\theta]=0.5$. This gives us no information on whether we think patients will respond to treatment prior to our clinical trial. We will now consider two more informative cases. In Case 1, suppose we are more certain that the patients will not respond to treatment. In Case 2, suppose we are more certain that the patients will respond to treatment. We can express these prior beliefs in Case 1 and Case 2 as the following distributions: $\theta_1\sim Beta(a_1=2,b_1=5)$ and $\theta_2\sim Beta(a_2=5,b_2=2)$. Below are the corresponding probability density functions.
 
 <center>
 

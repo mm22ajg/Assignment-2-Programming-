@@ -9,7 +9,7 @@ output:
 
 ## Introduction
 
-The RESERVE clinical trial studies the efficacy of a particular treatment on patients with relapsed/refractory multiple myeloma (RRMM), a type of bone marrow cancer. RESERVE is a type II clinical trial meaning we are investigating whether or not the patients respond to our treatment. This is important as patients with RRMM have previously been unresponsive to treatment. For safety, we want to be able to stop the trial early if it is clear the treatment is not working. To do this, we will implement the BOP2 (Bayesian optimal phase II) clinical trial design. This report aims to apply the BOP2 design in this scenario, and therefore evaluate its applicability.
+The RESERVE clinical trial studies the efficacy of a particular treatment on patients with relapsed/refractory multiple myeloma (RRMM), a type of bone marrow cancer. RESERVE is a type II clinical trial meaning we are investigating whether or not the patients respond to our treatment. This is important as patients with RRMM have previously been unresponsive to treatment. For safety, we want to be able to stop the trial early if it is clear the treatment is not working. To do this, we will implement the BOP2 (Bayesian optimal phase II) clinical trial design. This report aims to apply the BOP2 design in this scenario, and then evaluate how the result changes based on the prior distribution.
 
 ## The BOP2 design
 
@@ -37,7 +37,7 @@ We can now optimise the trial design by finding the stopping rule and sample siz
 
 ## Application
 
-Now we can implement the BOP2 clinical trial design in R. Here we want to minimise the expected sample size subject to the type I error rate being at most $0.05$ and the type II error rate being at most $0.2$. For the prior distribution we will use $a=0.5$ and $b=0.5$ here. We need to program two functions which are capable of calculating the expected sample size and the error rates.
+Now we can implement the BOP2 clinical trial design in R. Here $\theta_0=0.5$ and $\theta_1=0.7$. We want to minimise the expected sample size subject to the type I error rate being at most $0.05$ and the type II error rate being at most $0.2$. For the prior distribution we will begin by using $a=0.5$ and $b=0.5$. We need to program two functions which are capable of calculating the expected sample size and the error rates.
 
 ```{r include=FALSE}
 test_prob_y <- function(a, b) {
@@ -146,4 +146,13 @@ print(val)
 print(res)
 ```
 
-The minimum expected sample size found by the algorithm is 27.657. This is achieved when $\lambda=0.95$, $\gamma=0.9$, $n_1=8$, and $n_2=40$.
+The minimum expected sample size found by the algorithm is 27.657. This is achieved when $\lambda=0.95$, $\gamma=0.9$, $n_1=8$, and $n_2=40$. The algorithm took over one minute to run which is very poor considering the precision of our parameter estimates is $\pm0.025$, $\pm0.025$, $\pm2$, and $\pm2.5$, respectively.
+
+## Evaluation
+
+In the above implementation of the BOP2 clinical trial design we have used $\theta\sim Beta(0.5, 0.5)$ as a prior distribution for $\theta$. Below is the probability density function for this prior distribution
+
+```{r}
+x = seq(0,1,0.01)
+plot(x, pbeta(x, 0.5, 0.5), type='l')
+```

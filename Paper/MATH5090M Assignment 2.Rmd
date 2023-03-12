@@ -220,4 +220,6 @@ In this report we used a grid search to find the optimal parameter values. Evalu
 
 To summarise, we have successfully applied and evaluated the BOP2 clinical trial design, however the efficiency of our method should be improved.
 
+## Appendix
 
+<https://github.com/mm22ajg/Assignment-2-Programming-.git>

@@ -368,8 +368,8 @@ unresponsive to treatment. For safety, we want to be able to stop the
 trial early if it is clear the treatment is not working. To do this, we
 will implement the BOP2 (Bayesian optimal phase II) clinical trial
 design. This report aims to apply the BOP2 design in this scenario, and
-then evaluate how the design changes when we use a more or less
-informative prior distribution.</p>
+then evaluate how the design changes when we use a more informative
+prior distribution.</p>
 </div>
 <div id="the-bop2-design" class="section level2">
 <h2>The BOP2 design</h2>
@@ -576,7 +576,7 @@ BOP2optim(a = 0.5, b = 0.5)</code></pre>
 ## [1] 27.65722656  0.03992851  0.19625897</code></pre>
 <pre class="r"><code>proc.time() - ptm</code></pre>
 <pre><code>##    user  system elapsed 
-##   37.85    0.14   61.55</code></pre>
+##   35.87    0.09   61.49</code></pre>
 <p>The minimum expected sample size found by the algorithm is 27.657.
 This is achieved when <span class="math inline">\(\lambda=0.95\)</span>,
 <span class="math inline">\(\gamma=0.9\)</span>, <span class="math inline">\(n_1=8\)</span>, and <span class="math inline">\(n_2=40\)</span>. These parameters result in a type
@@ -648,20 +648,62 @@ parameters (<span class="math inline">\(n_1=16\)</span>, <span class="math inlin
 larger than in Case A. It appears we require more patients to guarantee
 that the treatment is indeed working and there is no evidence against
 this. Case B provides stopping rule parameter of <span class="math inline">\(\lambda=0.95\)</span> and <span class="math inline">\(\gamma=0.05\)</span>. The corresponding threshold
-values are<span class="math inline">\(C(n_1)=0.1108\)</span> and <span class="math inline">\(C(n_2)=0.05\)</span>. There has been a significant
+values are <span class="math inline">\(C(n_1)=0.1108\)</span> and <span class="math inline">\(C(n_2)=0.05\)</span>. There has been a significant
 reduction in the threshold value at the end of stage 1. In Case B, we
 are expecting that the treatment will have an effect on the patients
 therefore any suggestion by the data against this should be taken
-seriously. This is reflected in the extremely low threshold at the end
-of stage 1. The stopping parameter <span class="math inline">\(\lambda\)</span> is the same as the uninformative
-case and has remained fairly consistent throughout the three cases we
-have considered. <span class="math inline">\(\lambda=0.95\)</span>, and
-therefore <span class="math inline">\(C(n_2)=0.05\)</span>, appears to
-be a sensible choice in most cases. However, we have observed a
-significant reduction in the value of <span class="math inline">\(\gamma\)</span>.</p>
+seriously. Furthermore, note that <span class="math inline">\(E[\theta_B]=\frac{5}{7}\approx0.714\)</span>
+however the alternative hypothesis is <span class="math inline">\(\theta_1=0.7\)</span>. This is reflected in the
+extremely low threshold at the end of stage 1. Additionally, note that
+the stopping parameter <span class="math inline">\(\lambda\)</span> is
+the same as the uninformative case.</p>
 </div>
 <div id="discussion" class="section level2">
 <h2>Discussion</h2>
+<p>At the beginning of this report we aimed to assess how utilising an
+informative prior distribution would effect the optimised parameters. We
+studied three possiblilities for our opinions prior to the clinical
+trial, firstly the uninformative case, and then Cases A and B. In Case
+A, we believed patients would not respond to treatment, and in Case B we
+believed they would. Both events caused increases in sample size
+parameters compared to the uninformative case. The larger increase in
+sample size parameters in Case B compared to Case A was perhaps an
+unexpected, although beneficial, result. It was demonstrated that the
+beliefs in Case A reduced the expected sample size as we did not expect
+to proceed to stage 2, and conversely for Case B. For the stopping rule
+parameters, <span class="math inline">\(\lambda\)</span> has remained
+fairly consistent throughout the three cases we have considered. <span class="math inline">\(\lambda=0.95\)</span>, and therefore <span class="math inline">\(C(n_2)=0.05\)</span>, appears to be a sensible
+choice in most applications. This means that to proceed to a phase III
+clinical trial the probability of futility must not exceed 0.05.
+Conversely, we have observed a significant change in the value of <span class="math inline">\(\gamma\)</span>, therefore this should be specific
+to each trial. Comparing to the thresholds from the uninformative case,
+Case A produced a lower stage 1 threshold and a higher stage 2
+threshold. Case B produced the same stage 2 threshold as the
+uninformative case but a strict stage 1 threshold. This may have been
+because <span class="math inline">\(E[\theta_B]\approx0.714\)</span>
+which is above the alternative hypothesis <span class="math inline">\(\theta_1=0.7\)</span>. These results provide an
+insight into how the information provided by the prior distribution
+effects the trial design.</p>
+<p>In this report we used a grid search to find the optimal parameter
+values. Evaluating a grid does not guarantee to find the exact global
+minimum, therefore we have been careful not to make the grid too small
+and overlook plausible approximation for the minimum. The BOP2 design
+does not state any upper bounds on the parameters <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(n_1\)</span>, or <span class="math inline">\(n_2\)</span>. However, to use a grid search method
+we are forced to constrain these parameters. In our application we have
+searched over the grid <span class="math inline">\(0\le\lambda\le1\)</span>, <span class="math inline">\(0&lt;\gamma\le2\)</span>, <span class="math inline">\(4\le n_1\le20\)</span>, <span class="math inline">\(5\le n_2\le80\)</span>. The precision of our
+estimates is <span class="math inline">\(\pm0.025\)</span>, <span class="math inline">\(\pm0.025\)</span>, <span class="math inline">\(\pm2\)</span>, and <span class="math inline">\(\pm2.5\)</span>, respectively. Furthermore, one
+optimisation took slightly over one minute to complete. Throughout this
+report we have optimised the design three times, therefore it could take
+up to five minutes to execute the code in this report. This is an
+ineffective and time consuming process, although the output has
+(eventually) provided useful information. To improve the optimisation
+process we would need a general purpose optimisation function in R,
+capable of undertaking constraints on the outputs, and capable of
+determining the parameters over the positive real numbers or the
+positive integers.</p>
+<p>To summarise, we have successfully applied and evaluated the BOP2
+clinical trial design. however the efficiency of our method should be
+improved.</p>
 </div>
 
 

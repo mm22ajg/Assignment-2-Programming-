@@ -363,13 +363,13 @@ display: none;
 treatment on patients with relapsed/refractory multiple myeloma (RRMM),
 a type of bone marrow cancer. RESERVE is a type II clinical trial
 meaning we are investigating whether or not the patients respond to our
-treatment. This is important as patients with RRMM have previously been
-unresponsive to treatment. For safety, we want to be able to stop the
-trial early if it is clear the treatment is not working. To do this, we
-will implement the BOP2 (Bayesian optimal phase II) clinical trial
+treatment. This is important as patients with RRMM previously may have
+been unresponsive to treatment. For safety, we want to be able to stop
+the trial early if it is clear the treatment is not working. To do this,
+we will implement the BOP2 (Bayesian optimal phase II) clinical trial
 design. This report aims to apply the BOP2 design in this scenario, and
-then evaluate how the design changes when we use a more informative
-prior distribution.</p>
+then evaluate how the design changes when we are better informed prior
+to the clinical trial.</p>
 </div>
 <div id="the-bop2-design" class="section level2">
 <h2>The BOP2 design</h2>
@@ -557,26 +557,24 @@ which will use a grid search to find the optimal parameters <span class="math in
     err_rts &lt;- error_rates(grid[i,1],grid[i,2],grid[i,3],grid[i,4], a = a, b = b)
     if(exp_s_s &lt; res[1] &amp; err_rts[1] &lt;= 0.05 &amp; err_rts[2] &lt;= 0.2){
       res &lt;- c(exp_s_s,err_rts[1],err_rts[2])
-      val &lt;- grid[i,]
+      par &lt;- grid[i,]
     }
   }
   
   # Return the minimised expected sample size, error rates and 
   # corresponding parameters.
-  print(val)
-  print(res)
+  return(t(c(par, res)))
 }
 
 # Optimise the BOP2 design when a = 0.5 and b = 0.5, and record the time
 # elapsed.
 ptm &lt;- proc.time()
 BOP2optim(a = 0.5, b = 0.5)</code></pre>
-<pre><code>##       lambda gamma n1 n2
-## 30617   0.95   0.9  8 40
-## [1] 27.65722656  0.03992851  0.19625897</code></pre>
+<pre><code>##      lambda gamma n1 n2                             
+## [1,] 0.95   0.9   8  40 27.65723 0.03992851 0.196259</code></pre>
 <pre class="r"><code>proc.time() - ptm</code></pre>
 <pre><code>##    user  system elapsed 
-##   35.87    0.09   61.49</code></pre>
+##   39.70    0.14   81.11</code></pre>
 <p>The minimum expected sample size found by the algorithm is 27.657.
 This is achieved when <span class="math inline">\(\lambda=0.95\)</span>,
 <span class="math inline">\(\gamma=0.9\)</span>, <span class="math inline">\(n_1=8\)</span>, and <span class="math inline">\(n_2=40\)</span>. These parameters result in a type
@@ -619,10 +617,9 @@ cases. Notice that these probabilities sum to 1 as the distributions are
 mirror images of each other about 0.5. This ensures we have a fair
 comparison between the two cases. We can now optimise again, but this
 time using our new prior distributions. Starting with Case A</p>
-<pre class="r"><code>BOP2optim(a = 2, b = 5)</code></pre>
-<pre><code>##       lambda gamma n1 n2
-## 39708   0.85  0.55 12 50
-## [1] 16.55656109  0.04699996  0.17005484</code></pre>
+<pre class="r"><code>BOP2optim(a = 2, b = 5) # This will take around 1 minute to run. </code></pre>
+<pre><code>##      lambda gamma n1 n2                              
+## [1,] 0.85   0.55  12 50 16.55656 0.04699996 0.1700548</code></pre>
 <p>The parameters are now <span class="math inline">\(\lambda=0.85\)</span>, <span class="math inline">\(\gamma=0.55\)</span>, <span class="math inline">\(n_1=12\)</span>, and <span class="math inline">\(n_2=50\)</span>. The sample size parameters have
 both increased here however the expected sample size has decreased to
 16.557. This is due to the higher probability of the treatment not
@@ -637,10 +634,9 @@ Satisfying the threshold <span class="math inline">\(C(n_2)=0.15\)</span> is eno
 prior beliefs and confidently say that patients have responded to
 treatment. The type I and II error rates continue to satisfy the
 constraints as is the nature of the algorithm. For Case B we have</p>
-<pre class="r"><code>BOP2optim(a = 5, b = 2)</code></pre>
-<pre><code>##       lambda gamma n1 n2
-## 48740   0.95  0.05 16 60
-## [1] 48.78431373  0.04684502  0.18988292</code></pre>
+<pre class="r"><code>BOP2optim(a = 5, b = 2) # This will take around 1 minute to run.</code></pre>
+<pre><code>##      lambda gamma n1 n2                              
+## [1,] 0.95   0.05  16 60 48.78431 0.04684502 0.1898829</code></pre>
 <p>Conversely, in Case B, the expected sample size has increased from
 the original to 48.784. Naturally the expected sample size increases as
 we are more likely to proceed to stage 2, however the sample size
@@ -669,25 +665,28 @@ believed they would. Both events caused increases in sample size
 parameters compared to the uninformative case. The larger increase in
 sample size parameters in Case B compared to Case A was perhaps an
 unexpected, although beneficial, result. It was demonstrated that the
-beliefs in Case A reduced the expected sample size as we did not expect
-to proceed to stage 2, and conversely for Case B. For the stopping rule
-parameters, <span class="math inline">\(\lambda\)</span> has remained
-fairly consistent throughout the three cases we have considered. <span class="math inline">\(\lambda=0.95\)</span>, and therefore <span class="math inline">\(C(n_2)=0.05\)</span>, appears to be a sensible
-choice in most applications. This means that to proceed to a phase III
-clinical trial the probability of futility must not exceed 0.05.
-Conversely, we have observed a significant change in the value of <span class="math inline">\(\gamma\)</span>, therefore this should be specific
-to each trial. Comparing to the thresholds from the uninformative case,
-Case A produced a lower stage 1 threshold and a higher stage 2
-threshold. Case B produced the same stage 2 threshold as the
-uninformative case but a strict stage 1 threshold. This may have been
-because <span class="math inline">\(E[\theta_B]\approx0.714\)</span>
-which is above the alternative hypothesis <span class="math inline">\(\theta_1=0.7\)</span>. These results provide an
+beliefs in Case A reduced the expected sample size as we did not
+anticipate proceeding to stage 2, and conversely for Case B. For the
+stopping rule parameters, <span class="math inline">\(\lambda\)</span>
+has remained fairly consistent throughout the three cases we have
+considered. <span class="math inline">\(\lambda=0.95\)</span>, and
+therefore <span class="math inline">\(C(n_2)=0.05\)</span>, appears to
+be a sensible choice in most applications. This means that to proceed to
+a phase III clinical trial the probability of futility must not exceed
+0.05. Conversely, we have observed a significant change in the value of
+<span class="math inline">\(\gamma\)</span>, therefore this should be
+specific to each trial. Comparing to the thresholds from the
+uninformative case, Case A produced a lower stage 1 threshold and a
+higher stage 2 threshold. Case B produced the same stage 2 threshold as
+the uninformative case but a strict stage 1 threshold. This may have
+been because <span class="math inline">\(E[\theta_B]\approx0.714\)</span> which is above
+the alternative hypothesis <span class="math inline">\(\theta_1=0.7\)</span>. These results provide an
 insight into how the information provided by the prior distribution
 effects the trial design.</p>
 <p>In this report we used a grid search to find the optimal parameter
 values. Evaluating a grid does not guarantee to find the exact global
 minimum, therefore we have been careful not to make the grid too small
-and overlook plausible approximation for the minimum. The BOP2 design
+and overlook a plausible approximation for the minimum. The BOP2 design
 does not state any upper bounds on the parameters <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(n_1\)</span>, or <span class="math inline">\(n_2\)</span>. However, to use a grid search method
 we are forced to constrain these parameters. In our application we have
 searched over the grid <span class="math inline">\(0\le\lambda\le1\)</span>, <span class="math inline">\(0&lt;\gamma\le2\)</span>, <span class="math inline">\(4\le n_1\le20\)</span>, <span class="math inline">\(5\le n_2\le80\)</span>. The precision of our
@@ -702,8 +701,12 @@ capable of undertaking constraints on the outputs, and capable of
 determining the parameters over the positive real numbers or the
 positive integers.</p>
 <p>To summarise, we have successfully applied and evaluated the BOP2
-clinical trial design. however the efficiency of our method should be
+clinical trial design, however the efficiency of our method should be
 improved.</p>
+</div>
+<div id="appendix" class="section level2">
+<h2>Appendix</h2>
+<p><a href="https://github.com/mm22ajg/Assignment-2-Programming-.git" class="uri">https://github.com/mm22ajg/Assignment-2-Programming-.git</a></p>
 </div>
 
 

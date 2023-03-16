@@ -88,13 +88,12 @@ BOP2optim <- function(a, b){
     err_rts <- error_rates(grid[i,1],grid[i,2],grid[i,3],grid[i,4], a = a, b = b)
     if(exp_s_s < res[1] & err_rts[1] <= 0.05 & err_rts[2] <= 0.2){
       res <- c(exp_s_s,err_rts[1],err_rts[2])
-      val <- grid[i,]
+      par <- grid[i,]
     }
   }
   
   #Return the minimised expected sample size, error rates and corresponding parameters.
-  print(val)
-  print(res)
+  return(t(c(par, res)))
 }
 
 # Optimise the BOP2 design when a = 0.5 and b = 0.5, and record the time elapsed.

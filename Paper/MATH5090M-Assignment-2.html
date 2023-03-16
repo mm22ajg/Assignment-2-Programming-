@@ -363,8 +363,8 @@ display: none;
 treatment on patients with relapsed/refractory multiple myeloma (RRMM),
 a type of bone marrow cancer. RESERVE is a type II clinical trial
 meaning we are investigating whether or not the patients respond to our
-treatment. This is important as patients with RRMM previously may have
-been unresponsive to treatment. For safety, we want to be able to stop
+treatment. This is important as patients with RRMM may have been
+unresponsive to treatment before. For safety, we want to be able to stop
 the trial early if it is clear the treatment is not working. To do this,
 we will implement the BOP2 (Bayesian optimal phase II) clinical trial
 design. This report aims to apply the BOP2 design in this scenario, and
@@ -390,7 +390,7 @@ treatment to the current standard.</p></li>
 probability of responding to treatment, labelled <span class="math inline">\(\theta\)</span>. Also, patient outcomes are
 independent of each other. Therefore, by the end of stage <span class="math inline">\(i\)</span>, the number of patients who have
 responded to treatment <span class="math inline">\(y_i\)</span> is
-Binomially distributed, <span class="math display">\[y_i\mid\theta\sim
+Binomailly distributed, <span class="math display">\[y_i\mid\theta\sim
 Bin(n_i,\theta)\]</span></p>
 <p>Taking a Bayesian approach, we can attain the posterior distribution
 for <span class="math inline">\(\theta\)</span> by using the conjugate
@@ -431,8 +431,8 @@ calculate the expected sample sizes and the error rates. Since the
 sample size <span class="math inline">\(N\)</span> can only take two
 values, <span class="math inline">\(n_1\)</span> and <span class="math inline">\(n_2\)</span>, the expected sample size is given by
 <span class="math display">\[E[N]=n_1Pr(N=n_1)+n_2Pr(N=n_2)\]</span>Since the
-number of responses has a binomail distribution, we can use the law of
-total probability to sum over all possible number of reponses and write
+number of responses has a binomial distribution, we can use the law of
+total probability to sum over all possible number of responses and write
 <span class="math inline">\(Pr(N=n_1)\)</span> as <span class="math display">\[Pr(N=n_1)=\sum_{y_1=0}^{n_1}I\left[\int_{0}^{0.5}p(\theta\mid
 y_1)\, d\theta&gt;C_1\right]p(y_1)\]</span>Where <span class="math inline">\(I\)</span> is the indicator function. To find the
 distribution of <span class="math inline">\(p(y_1)\)</span>, we can use
@@ -574,7 +574,7 @@ BOP2optim(a = 0.5, b = 0.5)</code></pre>
 ## [1,] 0.95   0.9   8  40 27.65723 0.03992851 0.196259</code></pre>
 <pre class="r"><code>proc.time() - ptm</code></pre>
 <pre><code>##    user  system elapsed 
-##   39.70    0.14   81.11</code></pre>
+##   41.16    0.14   80.16</code></pre>
 <p>The minimum expected sample size found by the algorithm is 27.657.
 This is achieved when <span class="math inline">\(\lambda=0.95\)</span>,
 <span class="math inline">\(\gamma=0.9\)</span>, <span class="math inline">\(n_1=8\)</span>, and <span class="math inline">\(n_2=40\)</span>. These parameters result in a type
@@ -642,8 +642,8 @@ the original to 48.784. Naturally the expected sample size increases as
 we are more likely to proceed to stage 2, however the sample size
 parameters (<span class="math inline">\(n_1=16\)</span>, <span class="math inline">\(n_2=60\)</span>) have also increased, and are even
 larger than in Case A. It appears we require more patients to guarantee
-that the treatment is indeed working and there is no evidence against
-this. Case B provides stopping rule parameter of <span class="math inline">\(\lambda=0.95\)</span> and <span class="math inline">\(\gamma=0.05\)</span>. The corresponding threshold
+that the treatment is indeed working and confirm there is no evidence
+against this. Case B provides stopping rule parameter of <span class="math inline">\(\lambda=0.95\)</span> and <span class="math inline">\(\gamma=0.05\)</span>. The corresponding threshold
 values are <span class="math inline">\(C(n_1)=0.1108\)</span> and <span class="math inline">\(C(n_2)=0.05\)</span>. There has been a significant
 reduction in the threshold value at the end of stage 1. In Case B, we
 are expecting that the treatment will have an effect on the patients
@@ -658,7 +658,7 @@ the same as the uninformative case.</p>
 <h2>Discussion</h2>
 <p>At the beginning of this report we aimed to assess how utilising an
 informative prior distribution would effect the optimised parameters. We
-studied three possiblilities for our opinions prior to the clinical
+studied three possibilities for our opinions prior to the clinical
 trial, firstly the uninformative case, and then Cases A and B. In Case
 A, we believed patients would not respond to treatment, and in Case B we
 believed they would. Both events caused increases in sample size
@@ -700,9 +700,9 @@ process we would need a general purpose optimisation function in R,
 capable of undertaking constraints on the outputs, and capable of
 determining the parameters over the positive real numbers or the
 positive integers.</p>
-<p>To summarise, we have successfully applied and evaluated the BOP2
-clinical trial design, however the efficiency of our method should be
-improved.</p>
+<p>To summarise, we have successfully applied the BOP2 clinical trial
+design, and evaluated the effect of changing the prior distribution.
+However, the efficiency of our method should be improved.</p>
 </div>
 <div id="appendix" class="section level2">
 <h2>Appendix</h2>
